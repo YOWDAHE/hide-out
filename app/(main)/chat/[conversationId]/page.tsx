@@ -86,7 +86,7 @@ export default async function ConversationPage({ params }: PageProps) {
 				conversationId={conversation.id}
 			/>
 
-			<div className="border-t border-slate-200 bg-white p-4">
+			<div className="border-slate-200 bg-white relative w-full flex items-center justify-center">
 				<MessageComposer conversationId={conversation.id} action={sendAction} />
 			</div>
 		</div>

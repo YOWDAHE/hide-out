@@ -40,8 +40,8 @@ export default function MessagesList({
 	}
 
 	return (
-		<div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-6">
-			<div className="space-y-4 max-w-3xl mx-auto">
+		<div className="flex-1 overflow-y-auto bg-slate-50 px-4 pb-20 flex items-end w-full">
+			<div className="space-y-4 max-w-3xl mx-auto w-full">
 				{messages.map((msg, idx) => {
 					const fromMe = msg.senderId === currentUserId;
 					const isAI = msg.isAIMessage;
@@ -70,12 +70,12 @@ export default function MessagesList({
 							)}
 							{!showAvatar && <div className="w-8" />}
 							<div
-								className={`flex flex-col gap-1 ${
+								className={`flex flex-col gap-1 w-full ${
 									fromMe ? "items-end" : "items-start"
 								}`}
 							>
 								<div
-									className={`rounded-2xl px-4 py-2.5 max-w-[75%] shadow-sm ${
+									className={`rounded-2xl px-4 py-2.5 max-w-[60%] shadow-sm ${
 										isAI
 											? "bg-purple-100 text-purple-900 border border-purple-200"
 											: fromMe

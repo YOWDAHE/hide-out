@@ -27,10 +27,10 @@ export default function MessageComposer({
 	}, [state?.ok]);
 
 	return (
-		<div className="space-y-2">
+		<div className="space-y-2 absolute bottom-5 w-[95%]">
 			<form action={formAction} className="flex items-end gap-2">
 				<input type="hidden" name="conversationId" value={conversationId} />
-				<div className="flex-1 rounded-2xl border border-slate-200 bg-white p-2 flex items-end gap-2 shadow-sm">
+				<div className="flex-1 rounded-full border border-slate-200 bg-white/50 backdrop-blur-lg p-2 flex items-end gap-2 shadow-sm">
 					<textarea
 						ref={inputRef}
 						name="content"
@@ -54,9 +54,7 @@ export default function MessageComposer({
 					</button>
 				</div>
 			</form>
-			{state?.error && (
-				<p className="text-xs text-red-500 px-2">{state.error}</p>
-			)}
+			{state?.error && <p className="text-xs text-red-500 px-2">{state.error}</p>}
 		</div>
 	);
 }
