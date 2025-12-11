@@ -1,113 +1,187 @@
-'use client';
+"use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+import { signupWithEmail } from "@/app/actions/auth";
 
 type FormState = { error?: string };
-type AuthMode = "login" | "signup";
-type AuthAction = (prevState: FormState, formData: FormData) => Promise<FormState>;
 
-const SubmitButton = ({ label }: { label: string }) => {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="relative inline-flex w-full items-center justify-center rounded-xl bg-linear-to-r from-blue-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-400 hover:to-indigo-400 disabled:cursor-not-allowed disabled:opacity-70"
-    >
-      {pending ? "Working..." : label}
-    </button>
-  );
+type Props = {
+	mode: "login" | "signup";
+	action?: (prevState: FormState, formData: FormData) => Promise<FormState>;
 };
 
-export default function AuthForm({
-  mode,
-  action,
-}: {
-  mode: AuthMode;
-  action: AuthAction;
-}) {
-  const [state, formAction] = useActionState<FormState, FormData>(action, { error: undefined });
-  const isSignup = mode === "signup";
+export default function AuthForm({ mode, action }: Props) {
+	const [serverState, formAction, isPending] = useActionState<
+		FormState,
+		FormData
+	>(
+		action ?? (async () => ({ error: undefined })), // initial server action
+		{ error: undefined } // initial state
+	);
 
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <p className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-          {isSignup ? "Create account" : "Welcome back"}
-        </p>
-        <h2 className="text-3xl font-semibold text-white">
-          {isSignup ? "Join Hide Out" : "Sign in to Hide Out"}
-        </h2>
-        <p className="text-sm text-white/60">
-          {isSignup
-            ? "Create an account to start chatting with friends or AI."
-            : "Enter your credentials to continue."}
-        </p>
-      </div>
+	const [localError, setLocalError] = useState<string | undefined>(undefined);
 
-      <form action={formAction} className="space-y-4">
-        {isSignup && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/80" htmlFor="name">
-              Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              placeholder="Jane Doe"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-white outline-none ring-2 ring-transparent transition focus:border-white/20 focus:ring-blue-500/40"
-            />
-          </div>
-        )}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-white/80" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="you@example.com"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-white outline-none ring-2 ring-transparent transition focus:border-white/20 focus:ring-blue-500/40"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-white/80" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={6}
-            placeholder="••••••••"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-white outline-none ring-2 ring-transparent transition focus:border-white/20 focus:ring-blue-500/40"
-          />
-        </div>
+	const title = mode === "signup" ? "Create an account" : "Welcome back";
+	const subtitle =
+		mode === "signup"
+			? "Sign up with email or Google to get started."
+			: "Log in with your credentials or Google.";
 
-        {state?.error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-            {state.error}
-          </div>
-        )}
+	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		setLocalError(undefined);
 
-        <SubmitButton label={isSignup ? "Create account" : "Sign in"} />
-      </form>
+		const formData = new FormData(e.currentTarget);
+		const email = (formData.get("email") as string | null) ?? "";
+		const password = (formData.get("password") as string | null) ?? "";
 
-      <p className="text-sm text-white/60">
-        {isSignup ? "Already have an account? " : "New here? "}
-        <Link
-          href={isSignup ? "/login" : "/signup"}
-          className="font-semibold text-blue-300 hover:text-blue-200"
-        >
-          {isSignup ? "Sign in" : "Create one"}
-        </Link>
-      </p>
-    </div>
-  );
+		if (!email || !password) {
+			setLocalError("Email and password are required");
+			return;
+		}
+
+		if (mode === "signup") {
+			// 1) Run server action to create the user (DB + hashing)
+			const result = await formAction(formData);
+			if (result?.error) {
+				setLocalError(result.error);
+				return;
+			}
+
+			// 2) Then log in via credentials provider
+			await signIn("credentials", {
+				email,
+				password,
+				redirect: true,
+				callbackUrl: "/chat",
+			});
+		} else {
+			// Login mode: just sign in
+			const res = await signIn("credentials", {
+				email,
+				password,
+				redirect: true,
+				callbackUrl: "/chat",
+			});
+			if (res?.error) {
+				setLocalError("Invalid credentials");
+			}
+		}
+	}
+
+	async function handleGoogle() {
+		await signIn("google", { callbackUrl: "/chat" });
+	}
+
+	const error = localError || serverState?.error;
+
+	return (
+		<main className="flex items-center justify-center px-4">
+			<div className="w-full max-w-md rounded-2xl">
+				<h1 className="text-2xl font-semibold text-white">{title}</h1>
+				<p className="mt-1 text-sm text-white/70">{subtitle}</p>
+
+				{error && (
+					<div className="mt-4 rounded-md border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+						{error}
+					</div>
+				)}
+
+				<form onSubmit={handleSubmit} className="mt-6 space-y-4">
+					<div className="space-y-1.5">
+						<label htmlFor="email" className="block text-sm font-medium text-white/70">
+							Email
+						</label>
+						<input
+							id="email"
+							name="email"
+							type="email"
+							autoComplete="email"
+							required
+							className="w-full rounded-lg border bg-white px-3 py-2 text-sm text-black/80 outline-none ring-0 transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40"
+							placeholder="you@example.com"
+							disabled={isPending}
+						/>
+					</div>
+
+					<div className="space-y-1.5">
+						<label
+							htmlFor="password"
+							className="block text-sm font-medium text-white/70"
+						>
+							Password
+						</label>
+						<input
+							id="password"
+							name="password"
+							type="password"
+							autoComplete={mode === "signup" ? "new-password" : "current-password"}
+							required
+							className="w-full rounded-lg border bg-white px-3 py-2 text-sm text-black/80 outline-none ring-0 transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40"
+							placeholder="••••••••"
+							disabled={isPending}
+						/>
+					</div>
+
+					<button
+						type="submit"
+						disabled={isPending}
+						className="mt-2 flex w-full items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-900/50 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						{isPending
+							? mode === "signup"
+								? "Creating account..."
+								: "Logging in..."
+							: mode === "signup"
+							? "Sign up with email"
+							: "Log in with email"}
+					</button>
+				</form>
+
+				<div className="mt-4 flex items-center gap-2">
+					<div className="h-[1px] flex-1 bg-slate-800" />
+					<span className="text-xs uppercase tracking-wide text-slate-500">or</span>
+					<div className="h-[1px] flex-1 bg-slate-800" />
+				</div>
+
+				<button
+					type="button"
+					onClick={handleGoogle}
+					disabled={isPending}
+					className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-sky-500 hover:bg-slate-900/80 disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					<svg
+						aria-hidden="true"
+						focusable="false"
+						className="h-4 w-4"
+						viewBox="0 0 24 24"
+					>
+						<path
+							fill="#EA4335"
+							d="M12 10.2v3.7h5.2c-.2 1.2-.9 2.3-1.9 3l3 2.4C20.3 18.1 21 16.2 21 14c0-0.6-.1-1.1-.2-1.6H12z"
+						/>
+						<path
+							fill="#34A853"
+							d="M6.7 14.3 5.8 15l-2.4 1.9C4.6 19.9 8 22 12 22c2.7 0 5-.9 6.7-2.4l-3-2.4C14.8 18.1 13.5 18.6 12 18.6c-2.3 0-4.2-1.5-4.9-3.6z"
+						/>
+						<path
+							fill="#4A90E2"
+							d="M18.7 19.6 15.7 17.2C16.6 16.5 17.3 15.4 17.5 14.2H12v-3.7h9c.1.5.2 1 .2 1.6 0 2.2-.7 4.1-2.5 5.5z"
+						/>
+						<path
+							fill="#FBBC05"
+							d="M5.1 8.8 2.7 6.9C1.6 8.4 1 10.1 1 12c0 1.9.6 3.6 1.7 5l2.4-1.9C4.4 14.9 4.1 13.5 4.1 12c0-1.5.3-2.9 1-4.2z"
+						/>
+						<path
+							fill="#FFFFFF"
+							d="M12 5.4c1.4 0 2.6.5 3.5 1.3l2.6-2.6C16.9 2.5 14.7 1.5 12 1.5 8 1.5 4.6 3.6 2.7 6.9l2.4 1.9C7.8 7 9.7 5.4 12 5.4z"
+						/>
+					</svg>
+					<span>Continue with Google</span>
+				</button>
+			</div>
+		</main>
+	);
 }
-

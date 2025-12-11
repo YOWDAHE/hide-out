@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { requireUser } from './auth';
+// import { requireUser } from './auth';
 
 export async function getUserConversations() {
   const user = await requireUser();

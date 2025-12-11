@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import { useActionState, useState } from "react";
 
 type SearchState = {
@@ -44,7 +45,7 @@ export default function SidebarSearch({
 	return (
 		<div className="space-y-2">
 			<form action={formAction}>
-				<div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2">
+				<div className="flex items-center gap-2 rounded-full border border-white bg-white/90 px-3 py-2">
 					<input
 						id="q"
 						name="q"
@@ -55,9 +56,9 @@ export default function SidebarSearch({
 					/>
 					<button
 						type="submit"
-						className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-400"
+						className="rounded-full bg-blue-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-400"
 					>
-						Go
+						<Search size={16} />
 					</button>
 				</div>
 			</form>

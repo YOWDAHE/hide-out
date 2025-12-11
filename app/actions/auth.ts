@@ -1,13 +1,10 @@
 'use server';
 
-import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
-
+import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import type { User } from '@/app/generated/prisma/client';
-
-const SESSION_COOKIE = 'ho_session';
-const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+import bcrypt from 'bcryptjs';
+import { authOptions } from '@/lib/auth';
 
 type AuthPayload = {
   email: string;
@@ -17,8 +14,6 @@ type AuthPayload = {
 
 type SafeUser = Pick<User, 'id' | 'email' | 'name' | 'image'>;
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
 const toSafeUser = (user: User): SafeUser => ({
   id: user.id,
   email: user.email,
@@ -26,24 +21,23 @@ const toSafeUser = (user: User): SafeUser => ({
   image: user.image,
 });
 
-const setSessionCookie = async (userId: string) => {
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, userId, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_MAX_AGE,
-  });
-};
-
 export async function currentUser(): Promise<SafeUser | null> {
-  const session = (await cookies()).get(SESSION_COOKIE);
-  if (!session?.value) return null;
+  const session = await getServerSession(authOptions);
 
-  const user = await prisma.user.findUnique({ where: { id: session.value } });
+  // NextAuth default session.user doesn't include id - check for session existence
+  if (!session) {
+    return null;
+  }
+  if (!session.user) {
+    return null;
+  }
+
+  // Get user from database using session.user.email (most reliable)
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email! }
+  });
+
   if (!user) {
-    (await cookies()).delete(SESSION_COOKIE);
     return null;
   }
 
@@ -51,45 +45,31 @@ export async function currentUser(): Promise<SafeUser | null> {
 }
 
 export async function requireUser(): Promise<SafeUser> {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.email) {
+    throw new Error("Authenticated session is missing user data");
+  }
+
   const user = await currentUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
   return user;
 }
 
-export async function signup(input: AuthPayload): Promise<SafeUser> {
-  const email = normalizeEmail(input.email);
-  const password = input.password.trim();
-  const name = input.name?.trim();
-
-  if (!email || !password) throw new Error('Email and password are required');
-
+export async function signupWithEmail(data: AuthPayload) {
+  const email = data.email.trim().toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new Error('Email is already registered');
+  if (existing) throw new Error("Email already registered");
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { email, passwordHash, name },
+  const passwordHash = await bcrypt.hash(data.password.trim(), 10);
+  await prisma.user.create({
+    data: {
+      email,
+      passwordHash,
+      name: data.name?.trim()
+    },
   });
-
-  await setSessionCookie(user.id);
-  return toSafeUser(user);
 }
-
-export async function login(input: AuthPayload): Promise<SafeUser> {
-  const email = normalizeEmail(input.email);
-  const password = input.password.trim();
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user?.passwordHash) throw new Error('Invalid credentials');
-
-  const isValid = await bcrypt.compare(password, user.passwordHash);
-  if (!isValid) throw new Error('Invalid credentials');
-
-  await setSessionCookie(user.id);
-  return toSafeUser(user);
-}
-
-export async function logout(): Promise<void> {
-  (await cookies()).delete(SESSION_COOKIE);
-}
-

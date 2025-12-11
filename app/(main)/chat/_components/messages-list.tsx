@@ -40,7 +40,7 @@ export default function MessagesList({
 	}
 
 	return (
-		<div className="flex-1 overflow-y-auto bg-slate-50 px-4 pb-20 flex items-end w-full">
+		<div className="flex-1 overflow-y-auto px-4 pb-20 flex items-end w-full">
 			<div className="space-y-4 max-w-3xl mx-auto w-full">
 				{messages.map((msg, idx) => {
 					const fromMe = msg.senderId === currentUserId;
@@ -61,7 +61,7 @@ export default function MessagesList({
 										className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
 											isAI
 												? "bg-purple-100 text-purple-700"
-												: "bg-slate-200 text-slate-700"
+												: "bg-white text-slate-700"
 										}`}
 									>
 										{isAI ? "AI" : "U"}
@@ -75,11 +75,11 @@ export default function MessagesList({
 								}`}
 							>
 								<div
-									className={`rounded-2xl px-4 py-2.5 max-w-[60%] shadow-sm ${
+									className={`rounded-2xl px-6 py-2 max-w-[60%] shadow-sm ${
 										isAI
 											? "bg-purple-100 text-purple-900 border border-purple-200"
 											: fromMe
-											? "bg-blue-500 text-white"
+											? "bg-[#E1FEC6] text-black"
 											: "bg-white text-slate-900 border border-slate-200"
 									}`}
 								>
@@ -88,7 +88,7 @@ export default function MessagesList({
 									</p>
 								</div>
 								{showTimestamp && (
-									<span className="text-[10px] text-slate-400 px-2">
+									<span className="text-[10px] font-semibold text-white px-2">
 										{new Date(msg.createdAt).toLocaleTimeString([], {
 											hour: "2-digit",
 											minute: "2-digit",

@@ -120,3 +120,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+.bg-faded {
+  background-image: url('/telegramPattern.png');
+  opacity: 0.4;
+}
