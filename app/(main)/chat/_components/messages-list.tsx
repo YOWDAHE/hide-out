@@ -28,10 +28,10 @@ export default function MessagesList({
 
 	if (messages.length === 0) {
 		return (
-			<div className="flex-1 flex items-center justify-center bg-slate-50">
-				<div className="text-center">
-					<p className="text-sm font-medium text-slate-500">No messages yet</p>
-					<p className="text-xs text-slate-400 mt-1">
+			<div className="flex-1 flex items-center justify-center">
+				<div className="text-center bg-white/60 p-6 rounded-md">
+					<p className="text-lg font-medium text-black">No messages yet</p>
+					<p className="text-xs text-slate-800 mt-1">
 						Start the conversation by sending a message
 					</p>
 				</div>
