@@ -43,14 +43,9 @@ export default function AuthForm({ mode, action }: Props) {
 			return;
 		}
 
-		if (mode === "signup") {
-			// 1) Run server action to create the user (DB + hashing)
+        if (mode === "signup") {
+            
             const result = formAction(formData);
-            console.log(result);
-			if (result?.error) {
-				setLocalError(result.error);
-				return;
-            }
 
 			// 2) Then log in via credentials provider
 			await signIn("credentials", {
