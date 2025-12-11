@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useActionState, useState } from "react";
 
 type SearchState = {
@@ -31,7 +31,7 @@ export default function SidebarSearch({
 	startConversationAction: StartConversationAction;
 }) {
 	const [q, setQ] = useState(initialQ);
-	const [state, formAction] = useActionState(action, {
+	const [state, formAction, isPending] = useActionState(action, {
 		q: initialQ,
 		results: [],
 	});
@@ -41,6 +41,8 @@ export default function SidebarSearch({
 		formData.append("partnerId", partnerId);
 		await startConversationAction(formData);
 	};
+
+	const hasSearchedAtLeastOnce = state.q !== initialQ;
 
 	return (
 		<div className="space-y-2">
@@ -54,6 +56,17 @@ export default function SidebarSearch({
 						placeholder="Search user"
 						className="w-full bg-transparent px-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
 					/>
+					{q && (
+						<button
+							type="button"
+                            onClick={() => {
+                                setQ("");
+                            }}
+							className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+						>
+							<X size={14} />
+						</button>
+					)}
 					<button
 						type="submit"
 						className="rounded-full bg-blue-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-400"
@@ -62,27 +75,56 @@ export default function SidebarSearch({
 					</button>
 				</div>
 			</form>
+
 			{state?.error && <p className="px-3 text-xs text-red-500">{state.error}</p>}
-			{state?.results?.length ? (
-				<div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
-					{state.results.map((user) => (
-						<button
-							key={user.id}
-							type="button"
-							onClick={() => handleStartConversation(user.id)}
-							className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-50"
-						>
-							<div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">
-								{user.name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
+
+			{/* Only show results area when there is a query */}
+			{q !== "" && hasSearchedAtLeastOnce && (
+				<div>
+					{isPending && (
+						<div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 flex items-center gap-2">
+							<Search size={14} className="animate-pulse" />
+							<span>Searching…</span>
+						</div>
+					)}
+
+					{!isPending && state.results.length > 0 && (
+						<div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+							{state.results.map((user) => (
+								<button
+									key={user.id}
+									type="button"
+									onClick={() => handleStartConversation(user.id)}
+									className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-50"
+								>
+									<div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">
+										{user.name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
+									</div>
+									<div className="flex-1 leading-tight">
+										<p className="font-semibold">{user.name || user.email}</p>
+										<p className="text-[11px] text-slate-500">{user.email}</p>
+									</div>
+								</button>
+							))}
+						</div>
+					)}
+
+					{!isPending && state.results.length === 0 && (
+						<div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+							<div className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-slate-800">
+								<div className="flex-1 leading-tight">No user by that name</div>
+								<button
+									type="button"
+									onClick={() => setQ("")}
+									className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
+								>
+									<X />
+								</button>
 							</div>
-							<div className="flex-1 leading-tight">
-								<p className="font-semibold">{user.name || user.email}</p>
-								<p className="text-[11px] text-slate-500">{user.email}</p>
-							</div>
-						</button>
-					))}
+						</div>
+					)}
 				</div>
-			) : null}
+			)}
 		</div>
 	);
 }

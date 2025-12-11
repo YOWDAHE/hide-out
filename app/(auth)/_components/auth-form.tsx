@@ -3,7 +3,6 @@
 import { useActionState } from "react";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { signupWithEmail } from "@/app/actions/auth";
 
 type FormState = { error?: string };
 
@@ -34,7 +33,9 @@ export default function AuthForm({ mode, action }: Props) {
 		setLocalError(undefined);
 
 		const formData = new FormData(e.currentTarget);
-		const email = (formData.get("email") as string | null) ?? "";
+		const name = (formData.get("name") as string | null) ?? undefined;
+		const rawEmail = (formData.get("email") as string | null) ?? "";
+		const email = rawEmail.trim().toLowerCase(); // IMPORTANT
 		const password = (formData.get("password") as string | null) ?? "";
 
 		if (!email || !password) {
@@ -44,14 +45,16 @@ export default function AuthForm({ mode, action }: Props) {
 
 		if (mode === "signup") {
 			// 1) Run server action to create the user (DB + hashing)
-			const result = await formAction(formData);
+            const result = formAction(formData);
+            console.log(result);
 			if (result?.error) {
 				setLocalError(result.error);
 				return;
-			}
+            }
 
 			// 2) Then log in via credentials provider
 			await signIn("credentials", {
+				name,
 				email,
 				password,
 				redirect: true,
@@ -82,6 +85,12 @@ export default function AuthForm({ mode, action }: Props) {
 			<div className="w-full max-w-md rounded-2xl">
 				<h1 className="text-2xl font-semibold text-white">{title}</h1>
 				<p className="mt-1 text-sm text-white/70">{subtitle}</p>
+				<a
+					className="mt-4 text-sm text-blue-300"
+					href={mode == "login" ? "/signup" : "/login"}
+				>
+					{mode == "login" ? "Dont have an account" : "Already have an account"}
+				</a>
 
 				{error && (
 					<div className="mt-4 rounded-md border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
@@ -90,8 +99,30 @@ export default function AuthForm({ mode, action }: Props) {
 				)}
 
 				<form onSubmit={handleSubmit} className="mt-6 space-y-4">
+					{mode === "signup" && (
+						<div className="space-y-1.5">
+							<label
+								htmlFor="name"
+								className="block text-sm font-medium text-white/70"
+							>
+								Name
+							</label>
+							<input
+								id="name"
+								name="name"
+								type="text"
+								autoComplete="name"
+								className="w-full rounded-lg border bg-white px-3 py-2 text-sm text-black/80 outline-none ring-0 transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40"
+								placeholder="Your name"
+								disabled={isPending}
+							/>
+						</div>
+					)}
 					<div className="space-y-1.5">
-						<label htmlFor="email" className="block text-sm font-medium text-white/70">
+						<label
+							htmlFor="email"
+							className="block text-sm font-medium text-white/70"
+						>
 							Email
 						</label>
 						<input

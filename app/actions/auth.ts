@@ -63,13 +63,15 @@ export async function signupWithEmail(data: AuthPayload) {
   const email = data.email.trim().toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error("Email already registered");
-
+  
   const passwordHash = await bcrypt.hash(data.password.trim(), 10);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
       name: data.name?.trim()
     },
   });
+  console.log("user created: ", user)
+  return user;
 }

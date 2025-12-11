@@ -206,7 +206,7 @@ export default async function ChatLayout({ children }: LayoutProps) {
 					</div>
 				</aside>
 
-				<main className="flex-1 overflow-hidden rounded-xl bg-white shadow-xl shadow-black/5">
+				<main className="flex-1 overflow-hidden rounded-xl shadow-xl shadow-black/5 z-30">
 					{children}
 				</main>
 			</div>

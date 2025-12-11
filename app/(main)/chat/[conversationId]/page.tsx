@@ -76,7 +76,7 @@ export default async function ConversationPage({ params }: PageProps) {
 
   return (
 			<div className="h-full relative overflow-clip">
-				<div className=" relative flex h-full flex-col z-20">
+				<div className=" relative flex h-full flex-col z-20 bg-white/20">
 					<header className="flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-2xl px-4 py-3 rounded-b-sm">
 						<div className="flex items-center gap-3">
 							<Link

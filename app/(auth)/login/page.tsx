@@ -28,5 +28,5 @@ export default async function LoginPage() {
 	const session = await getServerSession(authOptions);
 	if (session?.user) redirect("/chat");
 
-	return <AuthForm mode="signup" action={signupAction} />;
+	return <AuthForm mode="login" action={signupAction} />;
 }
