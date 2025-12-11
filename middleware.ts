@@ -17,6 +17,12 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next();
     }
 
+    if (pathname === "/") {
+        const url = req.nextUrl.clone();
+        url.pathname = "/chat";
+        return NextResponse.redirect(url);
+    }
+
     const isAuthPage = AUTH_PAGES.includes(pathname);
 
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -37,7 +43,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
     matcher: [
-        "//:path",
+        "/",
         "/chat/:path*",
         "/login",
         "/signup",
