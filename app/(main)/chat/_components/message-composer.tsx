@@ -1,7 +1,7 @@
 "use client";
 
 import { Send } from "lucide-react";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 type FormState = { error?: string; ok?: boolean; message?: any };
@@ -10,29 +10,63 @@ type SendAction = (prev: FormState, formData: FormData) => Promise<FormState>;
 export default function MessageComposer({
 	conversationId,
 	action,
+	onOptimisticMessage,
+	onDelivered,
 }: {
 	conversationId: string;
 	action: SendAction;
+	onOptimisticMessage: (content: string) => string | void;
+	onDelivered: (tempId: string, real: any) => void;
 }) {
+	const [loading, startSending] = useTransition();
 	const [state, formAction] = useActionState<FormState, FormData>(action, {
 		error: undefined,
 		ok: false,
 	});
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const router = useRouter();
+	const tempIdRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (state?.ok && inputRef.current) {
 			inputRef.current.value = "";
 			inputRef.current.focus();
 			// Refresh the page data to show the new message immediately
-			router.refresh();
+			// router.refresh();
 		}
 	}, [state?.ok, router]);
 
+	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+		startSending(() => {
+			e.preventDefault();
+			const form = e.currentTarget;
+			const fd = new FormData(form);
+			const content = (fd.get("content") as string | null) ?? "";
+			if (!content.trim()) return;
+
+			// message add
+			const tempId = `temp-${Date.now()}`;
+			tempIdRef.current = tempId;
+			onOptimisticMessage(content);
+
+			// clear input
+			if (inputRef.current) inputRef.current.value = "";
+
+			// send to server
+			formAction(fd);
+		});
+	}
+
+	// when server responds with real message, reconcile + refresh
+	if (state.ok && state.message && tempIdRef.current) {
+		onDelivered(tempIdRef.current, state.message);
+		tempIdRef.current = null;
+		// router.refresh();
+	}
+
 	return (
 		<div className="space-y-2 absolute bottom-5 w-[95%]">
-			<form action={formAction} className="flex items-end gap-2">
+			<form onSubmit={handleSubmit} className="flex items-end gap-2">
 				<input type="hidden" name="conversationId" value={conversationId} />
 				<div className="flex-1 rounded-full border border-slate-200 bg-white/50 backdrop-blur-lg p-2 flex items-end gap-2 shadow-sm">
 					<textarea

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Message = {
 	id: string;
@@ -14,16 +14,19 @@ type MessagesListProps = {
 	messages: Message[];
 	currentUserId: string;
 	conversationId: string;
+	// onDelivered: (tempId: string, real: any) => void;
 };
 
 export default function MessagesList({
 	messages,
 	currentUserId,
 }: MessagesListProps) {
-	const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [localMessages, setLocalMessages] = useState<Message[]>(messages);
 
 	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        setLocalMessages(messages);
 	}, [messages]);
 
 	if (messages.length === 0) {
@@ -41,27 +44,29 @@ export default function MessagesList({
 
 	return (
 		<div className="flex-1 overflow-y-auto px-4 pb-20 flex items-end w-full">
-			<div className="space-y-4 max-w-3xl mx-auto w-full">
+			<div className="max-w-3xl mx-auto w-full">
 				{messages.map((msg, idx) => {
 					const fromMe = msg.senderId === currentUserId;
 					const isAI = msg.isAIMessage;
 					const showAvatar = !fromMe;
-					const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                    const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                    const nextMsg = messages.length > idx ? messages[idx+1] : null
 					const showTimestamp =
-						!prevMsg ||
-						new Date(msg.createdAt).getTime() -
-							new Date(prevMsg.createdAt).getTime() >
+						!nextMsg ||
+						new Date(nextMsg.createdAt).getTime() -
+							new Date(msg.createdAt).getTime() >
 							5 * 60 * 1000; // 5 minutes
 
 					return (
-						<div key={msg.id} className="flex gap-3 group">
+						<div
+							key={msg.id}
+							className={`flex gap-3 group ${showTimestamp ? "mb-3 mt-1" : "mt-1"}`}
+						>
 							{showAvatar && (
 								<div className="shrink-0">
 									<div
 										className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
-											isAI
-												? "bg-purple-100 text-purple-700"
-												: "bg-white text-slate-700"
+											isAI ? "bg-purple-100 text-purple-700" : "bg-white text-slate-700"
 										}`}
 									>
 										{isAI ? "AI" : "U"}
@@ -75,7 +80,9 @@ export default function MessagesList({
 								}`}
 							>
 								<div
-									className={`rounded-2xl px-6 py-2 max-w-[60%] shadow-sm ${
+									className={` ${
+										showTimestamp ? "rounded-t-2xl rounded-bl-2xl " : "rounded-2xl "
+									} px-6 py-2 max-w-[60%] shadow-sm ${
 										isAI
 											? "bg-purple-100 text-purple-900 border border-purple-200"
 											: fromMe

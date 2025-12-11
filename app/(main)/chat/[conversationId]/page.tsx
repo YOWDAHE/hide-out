@@ -7,6 +7,7 @@ import MessagesList from "../_components/messages-list";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import ConversationShell from "../_components/conversation-shell";
 
 type PageProps = { params: Promise<{ conversationId: string }> };
 
@@ -97,7 +98,7 @@ export default async function ConversationPage({ params }: PageProps) {
 						</div>
 					</header>
 
-					<MessagesList
+					{/* <MessagesList
 						messages={conversation.messages}
 						currentUserId={me.id}
 						conversationId={conversation.id}
@@ -105,7 +106,8 @@ export default async function ConversationPage({ params }: PageProps) {
 
 					<div className="border-slate-200 bg-white relative w-full flex items-center justify-center">
 						<MessageComposer conversationId={conversation.id} action={sendAction} />
-					</div>
+					</div> */}
+        <ConversationShell initialMessages={conversation.messages} conversationId={conversationId} action={sendAction} currentUserId={me.id} />
 				</div>
 
 				{/* <div className="z-0 bg-[url('/telegramColorPattern.png')] absolute inset-0 bg-cover bg-center blur-xs"></div>
