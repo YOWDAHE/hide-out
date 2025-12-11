@@ -76,7 +76,7 @@ export default function MessageComposer({
 						rows={1}
 						placeholder="Type your message..."
 						className="flex-1 resize-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 px-2 py-2 max-h-32 overflow-y-auto"
-						disabled={state?.ok === true}
+						// disabled={state?.ok === true}
 						onKeyDown={(e) => {
 							if (e.key === "Enter" && !e.shiftKey) {
 								e.preventDefault();
@@ -86,7 +86,7 @@ export default function MessageComposer({
 					/>
 					<button
 						type="submit"
-						disabled={state?.ok === true}
+						// disabled={state?.ok === false}
 						className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-500 to-indigo-500 text-white shadow-sm transition hover:from-blue-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
 					>
 						<Send className="h-4 w-4" />

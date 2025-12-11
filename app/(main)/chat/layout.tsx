@@ -10,6 +10,11 @@ import {
 	searchUsersByName,
 } from "@/app/actions/conversations";
 import SidebarSearch from "./_components/sidebar-search";
+import { usePresenceSocket } from "@/app/hooks/usePresenceSocket";
+import UserList from "./_components/user-list";
+import { PresenceProvider } from "@/app/components/presence-provider";
+import { getOrCreateAIConversation } from "@/app/actions/conversations";
+import ChatWithAIButton from "./_components/chat-with-ai";
 
 type LayoutProps = {
 	children: ReactNode;
@@ -43,6 +48,12 @@ async function searchUsersAction(
 			error: err instanceof Error ? err.message : "Search failed",
 		};
 	}
+}
+
+async function getAIConversationId() {
+	"use server";
+	const convo = await getOrCreateAIConversation();
+	return convo.id;
 }
 
 async function logoutAction() {
@@ -106,110 +117,127 @@ export default async function ChatLayout({ children }: LayoutProps) {
 	});
 
 	return (
-		<div className="min-h-screen bg-slate-200 text-slate-900 relative">
-			<div className="">
-				<div className="z-0 bg-[url('/telegramColorPattern.png')] absolute inset-0 bg-cover bg-center blur-xs"></div>
-				<div className="z-0 bg-[url('/telegramPattern.png')] absolute inset-0 bg-contain bg-center opacity-20"></div>
-			</div>
+		<PresenceProvider>
+			<div className="min-h-screen bg-slate-200 text-slate-900 relative">
+				<div className="">
+					<div className="z-0 bg-[url('/telegramColorPattern.png')] absolute inset-0 bg-cover bg-center blur-xs"></div>
+					<div className="z-0 bg-[url('/telegramPattern.png')] absolute inset-0 bg-contain bg-center opacity-20"></div>
+				</div>
 
-			<div className="mx-auto flex h-screen max-w-6xl gap-3 px-4 py-6 z-10">
-				<aside className="flex w-80 flex-col gap-4 rounded-xl border border-white bg-white/70 p-2 shadow-xl shadow-black/5 backdrop-blur-2xl z-30">
-					<div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
-						<div>
-							<p className="text-sm font-semibold text-slate-900">Chats</p>
-							<p className="text-xs text-slate-500">Find people or start new</p>
-						</div>
-						<details className="relative group">
-							<summary className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1 text-sm font-semibold text-slate-900 hover:border-blue-300 focus:outline-none">
-								<div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
-									{(me.name?.[0] ?? me.email?.[0] ?? "?").toUpperCase()}
-								</div>
-								<span className="text-slate-400">▾</span>
-							</summary>
-							<div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/80">
-								<div className="flex items-center gap-3 px-4 py-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+				<div className="mx-auto flex h-screen max-w-6xl gap-3 px-4 py-6 z-10">
+					<aside className="flex w-80 flex-col gap-4 rounded-xl border border-white bg-white/70 p-2 shadow-xl shadow-black/5 backdrop-blur-2xl z-30">
+						<div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
+							<div>
+								<p className="text-sm font-semibold text-slate-900">Chats</p>
+								<p className="text-xs text-slate-500">Find people or start new</p>
+							</div>
+							<details className="relative group">
+								<summary className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1 text-sm font-semibold text-slate-900 hover:border-blue-300 focus:outline-none">
+									<div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
 										{(me.name?.[0] ?? me.email?.[0] ?? "?").toUpperCase()}
 									</div>
-									<div className="leading-tight">
-										<p className="text-sm font-semibold text-slate-900">
-											{me.name || "Account"}
-										</p>
-										<p className="truncate text-xs text-slate-500">{me.email}</p>
+									<span className="text-slate-400">▾</span>
+								</summary>
+								<div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/80">
+									<div className="flex items-center gap-3 px-4 py-3">
+										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+											{(me.name?.[0] ?? me.email?.[0] ?? "?").toUpperCase()}
+										</div>
+										<div className="leading-tight">
+											<p className="text-sm font-semibold text-slate-900">
+												{me.name || "Account"}
+											</p>
+											<p className="truncate text-xs text-slate-500">{me.email}</p>
+										</div>
+									</div>
+									<div className="border-t border-slate-200">
+										<form action={logoutAction}>
+											<button
+												type="submit"
+												className="flex w-full items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-slate-50"
+											>
+												<span>⎋</span>
+												<span>Log out</span>
+											</button>
+										</form>
 									</div>
 								</div>
-								<div className="border-t border-slate-200">
-									<form action={logoutAction}>
-										<button
-											type="submit"
-											className="flex w-full items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-slate-50"
-										>
-											<span>⎋</span>
-											<span>Log out</span>
-										</button>
-									</form>
-								</div>
-							</div>
-						</details>
-					</div>
-
-					<SidebarSearch
-						action={searchUsersAction}
-						startConversationAction={startConversation}
-					/>
-
-					<div className="space-y-3 overflow-y-auto px-1">
-						<p className="text-xs font-semibold uppercase text-slate-500">Chats</p>
-						<div className="space-y-2">
-							{conversations.length === 0 && (
-								<p className="text-sm text-slate-500">No conversations yet</p>
-							)}
-							{conversations.map((convo) => {
-								const other =
-									convo.type === "AI"
-										? { name: "AI Assistant", email: "ai@hideout" }
-										: convo.participants
-												.map((p) => p.user)
-												.find((u) => u.id !== me.id) || {
-												name: "Direct chat",
-												email: "",
-										  };
-								const last = convo.messages?.[0];
-								const snippet =
-									last?.content ??
-									(convo.type === "AI" ? "Chat with AI" : "Direct conversation");
-								const timeLabel = last?.createdAt ? timeFmt.format(last.createdAt) : "";
-								return (
-									<a
-										key={convo.id}
-										href={`/chat/${convo.id}`}
-										className="flex items-center gap-3 px-1 py-3 transition hover:border-blue-400/40 hover:bg-blue-50/40"
-									>
-										<div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
-											{other.name?.[0]?.toUpperCase() || "C"}
-										</div>
-										<div className="flex-1">
-											<div className="flex items-center justify-between">
-												<p className="text-sm font-semibold text-slate-900">
-													{other.name || other.email}
-												</p>
-												<span className="text-[10px] uppercase text-slate-400">
-													{timeLabel}
-												</span>
-											</div>
-											<p className="truncate text-xs text-slate-500">{snippet}</p>
-										</div>
-									</a>
-								);
-							})}
+							</details>
 						</div>
-					</div>
-				</aside>
 
-				<main className="flex-1 overflow-hidden rounded-xl shadow-xl shadow-black/5 z-30">
-					{children}
-				</main>
+						<SidebarSearch
+							action={searchUsersAction}
+							startConversationAction={startConversation}
+						/>
+
+						<div className="space-y-3 overflow-y-auto px-1">
+							<p className="text-xs font-semibold uppercase text-slate-500">Chats</p>
+							<div className="space-y-2">
+								{conversations.length === 0 && (
+									<p className="text-sm text-slate-500">No conversations yet</p>
+								)}
+								{conversations.map((convo) => {
+									const other =
+										convo.type === "AI"
+											? { name: "AI Assistant", email: "ai@hideout" }
+											: convo.participants
+													.map((p) => p.user)
+													.find((u) => u.id !== me.id) || {
+													name: "Direct chat",
+													email: "",
+													id: "",
+											  };
+									const last = convo.messages?.[0];
+									const snippet =
+										last?.content ??
+										(convo.type === "AI" ? "Chat with AI" : "Direct conversation");
+									const timeLabel = last?.createdAt
+										? timeFmt.format(last.createdAt)
+										: "";
+									return (
+										<UserList
+											conversationId={convo.id}
+											name={other.name}
+											email={other.email}
+											snippet={snippet}
+											time={timeLabel}
+											key={convo.id}
+											otherId={other.id}
+										/>
+										// <a
+										// 	key={convo.id}
+										// 	href={`/chat/${convo.id}`}
+										// 	className="flex items-center gap-3 px-1 py-3 transition hover:border-blue-400/40 hover:bg-blue-50/40"
+										// >
+										// 	<div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+										// 		{other.name?.[0]?.toUpperCase() || "C"}
+										// 	</div>
+										// 	<div className="flex-1">
+										// 		<div className="flex items-center justify-between">
+										// 			<p className="text-sm font-semibold text-slate-900">
+										// 				{other.name || other.email}
+										// 			</p>
+										// 			<span className="text-[10px] uppercase text-slate-400">
+										// 				{timeLabel}
+										// 			</span>
+										// 		</div>
+										// 		<p className="truncate text-xs text-slate-500">{snippet}</p>
+										// 	</div>
+										// </a>
+									);
+								})}
+							</div>
+						</div>
+						<div className="absolute bottom-4 flex-1 w-full">
+							<ChatWithAIButton action={getAIConversationId} />
+						</div>
+					</aside>
+
+					<main className="flex-1 overflow-hidden rounded-xl shadow-xl shadow-black/15 z-30">
+						{children}
+					</main>
+				</div>
 			</div>
-		</div>
+		</PresenceProvider>
 	);
 }

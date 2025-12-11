@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { requireUser } from './auth';
+import { ConversationType } from "@/app/generated/prisma/client"
 // import { requireUser } from './auth';
 
 export async function getUserConversations() {
@@ -70,3 +71,29 @@ export async function searchUsersByName(query: string) {
   return searchedUser;
 }
 
+export async function getOrCreateAIConversation() {
+  const me = await requireUser();
+
+  // Check if user already has an AI conversation
+  let convo = await prisma.conversation.findFirst({
+    where: {
+      type: ConversationType.AI,
+      participants: {
+        some: { userId: me.id },
+      },
+    },
+  });
+
+  if (!convo) {
+    convo = await prisma.conversation.create({
+      data: {
+        type: ConversationType.AI,
+        participants: {
+          create: { userId: me.id },
+        },
+      },
+    });
+  }
+
+  return convo;
+}
