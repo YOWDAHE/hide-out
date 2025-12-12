@@ -21,6 +21,7 @@ export function usePresenceSocket() {
                 console.log("EVN: ", process.env.NEXT_PUBLIC_SOCKET_URL)
                 const s = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
                     auth: { token },
+                    withCredentials: true
                 });
 
                 s.on("connect", () => {

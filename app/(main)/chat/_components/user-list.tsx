@@ -47,7 +47,7 @@ function UserList(props: userListProp) {
 					</p>
 					<span className="text-[10px] uppercase text-slate-400">{props.time}</span>
 				</div>
-				<p className="truncate text-xs text-slate-500">{props.snippet}</p>
+				<p className="truncate text-xs text-slate-500 w-40">{props.snippet}</p>
 			</div>
 		</a>
 	);
